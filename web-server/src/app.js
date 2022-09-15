@@ -1,6 +1,8 @@
 const path = require('path')
 const express = require('express')
 const hbs = require('hbs')
+const geocode = require('./utils/geocode.js')
+const forecast = require('./utils/forecast.js')
 
 const app = express()
 
@@ -40,14 +42,69 @@ app.get('/help', (req, res) => {
 })
 
 app.get('/weather', (req, res) => {
+  const address = req.query.address
+  
+  if (!address)
+  {
+    return res.send({
+      error: 'Please provide an address'
+    })
+  }
+
+  geocode(address, (error, {latitude, longitude, location} = {}) => {
+    if (error)
+    {
+      return res.send({
+        error
+      })
+    }
+    
+    forecast(latitude, longitude, (error, forecastData) => {
+      if (error)
+      {
+        return res.send({
+          error
+        })
+      }
+
+      res.send({
+        location,
+        forecast: forecastData,
+        address
+      })
+    })
+  })  
+})
+
+
+
+app.get('/products', (req, res) => {
+  if (!req.query.search) {
+    return res.send({
+      error: 'You must provide a search term'
+    })
+  }
+  
+  console.log(req.query.search)
   res.send({
-    location: 'Cluj',
-    forecast: 'Sunny right now! :)'
+    products: []
+  })
+})
+
+app.get('/help/*', (req, res) => {
+  res.render('404', {
+    errorMessage: 'Help article not found',
+    title: '404',
+    name: 'Tudor'
   })
 })
 
 app.get('*', (req, res) => {
-  res.send('My 404 page')
+  res.render('404', {
+    errorMessage: 'Page not found',
+    title: '404',
+    name: 'Tudor'
+  })
 })
 
 app.listen(3000, () => {
